@@ -17,7 +17,7 @@
 - 支持鼠标、触屏和键盘（方向键 / 空格），带合成音效，适配深浅色主题
 - 只有一个 HTML 文件，不用构建，下载后用浏览器打开就能玩
 
-实物机身正面是 OpenAI 的标志，这里换成了中性的重置符号。视频里看不出倒计时显示在哪，网页就把它放进了拉手上方的黑槽。
+实物机身正面是 OpenAI 的标志。视频里看不出倒计时显示在哪，网页就把它放进了拉手上方的黑槽。
 
 本项目由 Claude Opus 5.5 和 Qwen 3.8 Max 合作完成。
 
@@ -32,6 +32,6 @@ The night before DevDay 2026, Tibo (Thibault Sottiaux), who leads Codex at OpenA
 - Works with mouse, touch and keyboard (arrow keys / Space), with synthesized sound effects and light/dark themes
 - One HTML file, no build step: download it and open it in any modern browser
 
-The real device has the OpenAI logo on its front; this replica uses a neutral reset symbol instead. The video doesn't show where the countdown is displayed, so the page puts it in the slot above the handle.
+The real device has the OpenAI logo on its front. The video doesn't show where the countdown is displayed, so the page puts it in the slot above the handle.
 
 Made in collaboration by Claude Opus 5.5 and Qwen 3.8 Max.
