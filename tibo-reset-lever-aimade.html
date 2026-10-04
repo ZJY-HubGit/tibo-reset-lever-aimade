@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>额度重置拉杆</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wght@400;600&family=Michroma&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: the scene from the video. A palm-sized silver reset unit stands on a walnut desk
+   in front of wooden slats; the local tally reads out beside it; results drop in as toasts top-right. */
+:root{
+  --bg:#E7EAEE;
+  --ink:#14171B;
+  --ink-soft:#56606B;
+  --rule:#CBD1D8;
+  --link:#1D5BC9;
+  --ok:#16804A;
+  --warn:#B56A00;
+  --focus:#2563EB;
+  --toast-bg:#FFFFFF;
+  --toast-ink:#14171B;
+  --toast-soft:#5A636E;
+  --toast-edge:#D5DAE0;
+  --scene:#2A2018;
+  --f-display:"Michroma","Eurostile","Microgramma","Arial Black",sans-serif;
+  --f-body:"Noto Sans SC","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --f-mono:"Martian Mono","JetBrains Mono","SFMono-Regular",Consolas,ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101315; --ink:#E8EBEE; --ink-soft:#97A1AC; --rule:#283037; --link:#8DB4FF;
+    --ok:#3DD68C; --warn:#FFB547; --focus:#7FA8FF;
+    --toast-bg:#1B2025; --toast-ink:#EDF0F3; --toast-soft:#A0A9B4; --toast-edge:#2C333B;
+    --scene:#1C1611;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101315; --ink:#E8EBEE; --ink-soft:#97A1AC; --rule:#283037; --link:#8DB4FF;
+  --ok:#3DD68C; --warn:#FFB547; --focus:#7FA8FF;
+  --toast-bg:#1B2025; --toast-ink:#EDF0F3; --toast-soft:#A0A9B4; --toast-edge:#2C333B;
+  --scene:#1C1611;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--link);text-underline-offset:2px}
+button{font:inherit}
+:focus-visible{outline:2.5px solid var(--focus);outline-offset:3px}
+
+.page{max-width:1140px;margin:0 auto;padding-inline:20px;padding-block:26px 44px}
+@media (max-width:480px){.page{padding-inline:16px;padding-block:18px 36px}}
+
+.masthead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;margin-bottom:20px}
+.titles{min-width:0;flex:1 1 420px}
+.eyebrow{margin:0 0 8px;font-family:var(--f-display);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-soft)}
+h1{margin:0;font-weight:900;font-size:clamp(30px,4.2vw,44px);line-height:1.1;letter-spacing:.02em;text-wrap:balance}
+.lede{margin:10px 0 0;max-width:40em;color:var(--ink-soft)}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 13px 7px 11px;border:1px solid var(--rule);border-radius:999px;background:transparent;color:var(--ink);font-size:13.5px;cursor:pointer;white-space:nowrap}
+.chip:hover{border-color:var(--ink-soft)}
+.chip svg{width:18px;height:18px;flex:none}
+.chip[aria-pressed="false"]{color:var(--ink-soft)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1.78fr) minmax(250px,1fr);gap:28px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr);gap:22px}}
+
+.stage{min-width:0}
+.scene{border-radius:18px;overflow:hidden;background:var(--scene);box-shadow:0 0 0 1px rgba(0,0,0,.18),0 18px 40px -24px rgba(0,0,0,.6)}
+#device{display:block;width:100%;height:auto;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+
+.status{display:flex;align-items:flex-start;gap:10px;margin:14px 4px 0;min-height:1.7em;font-size:14.5px}
+.status .dot{width:9px;height:9px;margin-top:.62em;border-radius:50%;background:var(--ink-soft);flex:none}
+.status[data-state="armed"] .dot{background:var(--warn);animation:pulse .9s ease-in-out infinite}
+.status[data-state="done"] .dot{background:var(--ok)}
+.status .msg{min-width:0;flex:1}
+.status .timer{padding-top:.1em;font-family:var(--f-mono);font-weight:600;font-size:13.5px;color:var(--warn);font-variant-numeric:tabular-nums;white-space:nowrap}
+@keyframes pulse{50%{opacity:.25}}
+
+.panel{display:grid;gap:20px;min-width:0;padding-top:4px}
+.label{margin:0;font-size:13px;color:var(--ink-soft);letter-spacing:.06em}
+.big{display:flex;align-items:baseline;gap:10px;margin-top:2px;font-family:var(--f-mono);font-weight:600;font-size:clamp(54px,7vw,76px);line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.big .unit{font-family:var(--f-body);font-size:18px;font-weight:500;color:var(--ink-soft);letter-spacing:0}
+.big.bump #countBig{animation:bump .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bump{0%{color:var(--ok)}30%{transform:translateY(-6px)}100%{transform:none}}
+#countBig{display:inline-block}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0;padding-top:14px;border-top:1px solid var(--rule)}
+.facts dt{font-size:12.5px;color:var(--ink-soft)}
+.facts dd{margin:2px 0 0;font-family:var(--f-mono);font-size:13.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.log h2{margin:0 0 8px;font-size:13px;font-weight:700;color:var(--ink-soft);letter-spacing:.06em}
+.log ol{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.log li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;font-size:13.5px}
+.log time{font-family:var(--f-mono);font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.ev{display:flex;align-items:center;gap:8px}
+.ev::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.ev.cancel{color:var(--ink-soft)}
+.ev.cancel::before{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink-soft)}
+.log .empty{color:var(--ink-soft);font-size:13.5px}
+.note{margin:0;font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+.note.warn{color:var(--warn)}
+.text-btn{justify-self:start;padding:6px 0;border:0;background:none;color:var(--ink-soft);font-size:13px;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.text-btn:hover{color:var(--ink)}
+.text-btn.confirm{color:var(--warn);font-weight:700}
+
+.about{margin-top:44px;padding-top:22px;border-top:1px solid var(--rule);max-width:760px}
+.about h2{margin:0 0 12px;font-size:16px;font-weight:700}
+.about ol{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.about li{display:grid;grid-template-columns:5.4em minmax(0,1fr);gap:12px}
+.about .when{font-size:13px;color:var(--ink-soft);padding-top:1px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.about q{quotes:"“" "”"}
+.about .aside{margin:14px 0 0;font-size:13px;color:var(--ink-soft)}
+footer{margin-top:26px;font-size:12.5px;color:var(--ink-soft)}
+
+.toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 16px);right:16px;z-index:40;display:flex;flex-direction:column;gap:10px;width:min(360px,calc(100vw - 32px));pointer-events:none}
+.toast{pointer-events:auto;position:relative;display:grid;grid-template-columns:30px minmax(0,1fr) 26px;gap:12px;align-items:start;padding:14px 10px 16px 14px;border-radius:14px;background:var(--toast-bg);color:var(--toast-ink);border:1px solid var(--toast-edge);box-shadow:0 14px 34px -14px rgba(0,0,0,.45),0 2px 6px rgba(0,0,0,.08);overflow:hidden;animation:toastIn .34s cubic-bezier(.2,1.25,.4,1) both}
+.toast.leaving{animation:toastOut .24s ease-in forwards}
+.t-icon{width:30px;height:30px;color:var(--warn)}
+.t-icon svg{display:block;width:30px;height:30px}
+.toast.success .t-icon{color:var(--ok)}
+.toast.cancel .t-icon{color:var(--toast-soft)}
+.t-title{margin:1px 0 0;font-weight:700;font-size:15px;line-height:1.35}
+.t-sub{margin:3px 0 0;font-size:12.5px;line-height:1.5;color:var(--toast-soft)}
+.t-sub b{font-family:var(--f-mono);font-weight:600;font-size:12px;color:var(--toast-ink);font-variant-numeric:tabular-nums}
+.t-close{display:grid;place-items:center;width:26px;height:26px;margin:-3px 0 0;padding:0;border:0;border-radius:7px;background:transparent;color:var(--toast-soft);cursor:pointer}
+.t-close:hover{background:var(--toast-edge);color:var(--toast-ink)}
+.t-close svg{width:14px;height:14px}
+.t-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--toast-edge)}
+.t-bar i{display:block;height:100%;background:var(--warn);transform-origin:0 50%}
+.toast.success .t-bar i{background:var(--ok)}
+.toast.cancel .t-bar i{background:var(--toast-soft)}
+@keyframes toastIn{from{opacity:0;transform:translateX(22px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(22px)}}
+
+/* ---- the unit (a physical object: fixed materials in both themes) ---- */
+.rd{font-family:var(--f-mono);font-size:40px;font-weight:600;letter-spacing:1px;fill:var(--rd)}
+#readout{--rd:#8A5A1A}
+#readout.m-armed{--rd:#FFB321}
+#readout.m-done{--rd:#46EE94}
+#rdBar{fill:var(--rd)}
+#led{fill:#9FD3FF}
+#led.armed{fill:#FFB321;animation:blink .5s steps(1,end) infinite}
+#led.done{fill:#46EE94}
+#led.abort{fill:#FF5A3C}
+@keyframes blink{50%{fill:#4A3410}}
+#handle{cursor:grab;outline:none}
+#handle.grabbing{cursor:grabbing}
+#handle .focus-ring{opacity:0}
+#handle:focus-visible .focus-ring{opacity:1}
+.hint-line{fill:none;stroke:rgba(255,255,255,.88);stroke-width:2.8;stroke-linecap:round;stroke-dasharray:2 9;animation:flow 1s linear infinite}
+.hint-head{fill:rgba(255,255,255,.88)}
+#hint{pointer-events:none;transition:opacity .4s}
+#hint.gone{opacity:0}
+@keyframes flow{to{stroke-dashoffset:-22}}
+
+@media (prefers-reduced-motion: reduce){
+  .hint-line{animation:none}
+  #led.armed,.status[data-state="armed"] .dot{animation:none}
+  .toast,.toast.leaving{animation-duration:.01s}
+  .big.bump #countBig{animation:none}
+}
+</style>
+<script>document.documentElement.lang="zh-CN";</script>
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <div class="titles">
+      <p class="eyebrow">Fan replica · reset lever</p>
+      <h1>额度重置拉杆</h1>
+      <p class="lede">照着 Codex 负责人 Tibo 那台实体重置装置做的网页复刻。按住机身底部的 U 形拉手往下拉，10 秒后给全体 ChatGPT 付费用户重置额度；10 秒内推回去就取消。</p>
+    </div>
+    <button id="soundBtn" class="chip" type="button" aria-pressed="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z" fill="currentColor" fill-opacity=".14"/><path class="snd-on" d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11"/><path class="snd-off" d="M16 9.5l5 5M21 9.5l-5 5" hidden/></svg>
+      <span id="soundLabel">声音开</span>
+    </button>
+  </header>
+
+  <main class="layout">
+    <section class="stage" aria-label="重置装置">
+      <div class="scene">
+        <svg id="device" viewBox="-40 40 720 570" role="group" aria-label="重置装置：银白机身装在深色支架上，标志下面一道黑槽，最下面是 U 形拉手">
+          <defs>
+            <linearGradient id="gSlat" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#6A4529"/><stop offset=".45" stop-color="#A8774A"/><stop offset="1" stop-color="#5E3D24"/>
+            </linearGradient>
+            <pattern id="pSlats" width="31" height="10" patternUnits="userSpaceOnUse">
+              <rect width="31" height="10" fill="#120E0B"/>
+              <rect x="8" width="23" height="10" fill="url(#gSlat)"/>
+            </pattern>
+            <linearGradient id="gHaze" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#0D0A08" stop-opacity=".72"/>
+              <stop offset=".55" stop-color="#1A130E" stop-opacity=".38"/>
+              <stop offset="1" stop-color="#0D0A08" stop-opacity=".62"/>
+            </linearGradient>
+            <radialGradient id="gKey" cx="320" cy="250" r="300" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#FFE7C4" stop-opacity=".30"/>
+              <stop offset="1" stop-color="#FFE7C4" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="gDesk" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3E2414"/><stop offset=".4" stop-color="#5E3920"/><stop offset="1" stop-color="#7D4D2B"/>
+            </linearGradient>
+            <pattern id="pGrain" width="400" height="13" patternUnits="userSpaceOnUse">
+              <path d="M0 3.5 C100 1.5 210 6 400 3.5" fill="none" stroke="#24130A" stroke-opacity=".38" stroke-width="1.1"/>
+              <path d="M0 9.5 C140 11.5 260 7.5 400 9.5" fill="none" stroke="#D29A64" stroke-opacity=".14" stroke-width="1.6"/>
+            </pattern>
+            <linearGradient id="gAlu" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#B9BEC4"/><stop offset=".06" stop-color="#ECEFF2"/><stop offset=".5" stop-color="#E2E5E9"/><stop offset=".92" stop-color="#C9CDD2"/><stop offset="1" stop-color="#9EA4AB"/>
+            </linearGradient>
+            <linearGradient id="gAluShade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#FFFFFF" stop-opacity=".42"/><stop offset=".45" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity=".10"/>
+            </linearGradient>
+            <linearGradient id="gStand" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#17191B"/><stop offset=".5" stop-color="#33363B"/><stop offset="1" stop-color="#151719"/>
+            </linearGradient>
+            <linearGradient id="gBase" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#3A3D42"/><stop offset="1" stop-color="#202225"/>
+            </linearGradient>
+            <linearGradient id="gPocket" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#030304"/><stop offset=".7" stop-color="#141518"/><stop offset="1" stop-color="#202226"/>
+            </linearGradient>
+            <linearGradient id="gChannel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#000000"/><stop offset=".12" stop-color="#0B0C0E"/><stop offset="1" stop-color="#101114"/>
+            </linearGradient>
+            <filter id="fBlur" x="-30%" y="-300%" width="160%" height="700%"><feGaussianBlur stdDeviation="7"/></filter>
+            <filter id="fGlow" x="-20%" y="-40%" width="140%" height="180%">
+              <feGaussianBlur stdDeviation="2.6" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- the office behind: wooden slats, then the walnut desk -->
+          <rect x="-80" y="0" width="800" height="502" fill="url(#pSlats)"/>
+          <rect x="-80" y="0" width="800" height="502" fill="url(#gHaze)"/>
+          <rect x="-80" y="0" width="800" height="502" fill="url(#gKey)"/>
+          <rect x="-80" y="500" width="800" height="140" fill="url(#gDesk)"/>
+          <rect x="-80" y="500" width="800" height="140" fill="url(#pGrain)"/>
+          <rect x="-80" y="500" width="800" height="1.6" fill="#E6B07A" fill-opacity=".35"/>
+
+          <!-- stand -->
+          <ellipse cx="320" cy="596" rx="156" ry="9" fill="#000000" fill-opacity=".6" filter="url(#fBlur)"/>
+          <rect x="228" y="356" width="184" height="220" fill="url(#gStand)"/>
+          <path d="M198 572 H442 L456 589 H184 Z" fill="url(#gBase)"/>
+          <rect x="184" y="589" width="272" height="8" rx="2" fill="#0C0D0F"/>
+          <path d="M198 572.6 H442" stroke="#FFFFFF" stroke-opacity=".14"/>
+
+          <!-- channel behind the slot, with the countdown readout -->
+          <rect x="208" y="262" width="224" height="178" rx="6" fill="url(#gChannel)"/>
+          <g id="readout" class="m-idle" filter="url(#fGlow)">
+            <text id="rdTxt" class="rd" x="320" y="345" text-anchor="middle">10.0</text>
+            <rect id="rdBar" x="246" y="361" width="148" height="3" rx="1.5"/>
+          </g>
+          <circle id="led" cx="222" cy="284" r="2.8"/>
+
+          <!-- upper body with the OpenAI knot mark (style per reference logo) -->
+          <path d="M226 70 H414 Q440 70 440 96 V267 Q440 272 435 272 H205 Q200 272 200 267 V96 Q200 70 226 70 Z" fill="url(#gAlu)"/>
+          <path d="M226 70 H414 Q440 70 440 96 V267 Q440 272 435 272 H205 Q200 272 200 267 V96 Q200 70 226 70 Z" fill="url(#gAluShade)"/>
+          <path d="M226 70.8 H414 Q439.2 70.8 439.2 96" fill="none" stroke="#FFFFFF" stroke-opacity=".75" stroke-width="1.2"/>
+          <path d="M201 270.5 H439" stroke="#000000" stroke-opacity=".25"/>
+          <g transform="translate(277 125) scale(3.6)" aria-hidden="true">
+            <path fill="#FFFFFF" fill-opacity=".85" transform="translate(0 .35)" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zM13.2599 22.43a4.4758 4.4758 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .0332.0519v5.5826a4.504 4.504 0 0 1-4.4897 4.4941zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6456zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8551L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.6678zm2.0107-3.0234l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.0332-.0615V6.055a4.4992 4.4992 0 0 1 7.3761-3.4653l-.142.0805L8.71 5.4279a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.5018 2.6069 1.5018v3.0036l-2.602 1.5018-2.607-1.5018z"/>
+            <path fill="#0E1114" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.073zM13.2599 22.43a4.4758 4.4758 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .0332.0519v5.5826a4.504 4.504 0 0 1-4.4897 4.4941zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6456zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8551L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.6678zm2.0107-3.0234l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.0332-.0615V6.055a4.4992 4.4992 0 0 1 7.3761-3.4653l-.142.0805L8.71 5.4279a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.5018 2.6069 1.5018v3.0036l-2.602 1.5018-2.607-1.5018z"/>
+          </g>
+
+          <!-- pull hint -->
+          <g id="hint" aria-hidden="true">
+            <path class="hint-line" d="M480 312 V392"/>
+            <path class="hint-head" d="M480 406 L471.5 393 H488.5 Z"/>
+          </g>
+
+          <!-- the U-shaped pull handle -->
+          <g id="handle" role="switch" tabindex="0" aria-checked="false" aria-label="U 形拉手。往下拉到底开始 10 秒倒计时，推回顶部取消。键盘：方向下键拉下，方向上键推回，空格切换。">
+            <g transform="translate(0 6)">
+            <rect x="188" y="280" width="264" height="172" fill="transparent"/>
+            <path d="M205 290 H435 Q440 290 440 295 V414 Q440 440 414 440 H226 Q200 440 200 414 V295 Q200 290 205 290 Z" fill="url(#gAlu)"/>
+            <path d="M205 290 H435 Q440 290 440 295 V414 Q440 440 414 440 H226 Q200 440 200 414 V295 Q200 290 205 290 Z" fill="url(#gAluShade)"/>
+            <path d="M201 290.7 H439" stroke="#FFFFFF" stroke-opacity=".8" stroke-width="1.2"/>
+            <rect x="221" y="311" width="198" height="108" rx="13" fill="url(#gPocket)"/>
+            <path d="M234 418.4 H406" stroke="#FFFFFF" stroke-opacity=".16" stroke-width="1.2"/>
+            <rect x="221" y="311" width="198" height="108" rx="13" fill="none" stroke="#000000" stroke-opacity=".35"/>
+            <rect class="focus-ring" x="193" y="283" width="254" height="164" rx="31" fill="none" stroke="var(--focus)" stroke-width="3"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="status" id="status" data-state="idle"><span class="dot" aria-hidden="true"></span><span class="msg" id="statusMsg" aria-live="polite">按住机身底部的 U 形拉手，往下拉到底。</span><span class="timer" id="statusTimer"></span></p>
+    </section>
+
+    <aside class="panel" aria-label="本机记录">
+      <div>
+        <p class="label">本机累计重置</p>
+        <div class="big" id="bigWrap"><span id="countBig">0</span><span class="unit">次</span></div>
+      </div>
+      <dl class="facts">
+        <div><dt>反悔取消</dt><dd><span id="cancelCount">0</span> 次</dd></div>
+        <div><dt>上次重置</dt><dd id="lastTime">还没有</dd></div>
+      </dl>
+      <div class="log">
+        <h2>最近记录</h2>
+        <ol id="logList"></ol>
+      </div>
+      <p class="note" id="storageNote">记录存在这台电脑的浏览器里（localStorage），刷新或关掉再打开都还在。换浏览器或清除网站数据会清空。</p>
+      <button id="clearBtn" class="text-btn" type="button">清零记录</button>
+    </aside>
+  </main>
+
+  <section class="about" aria-labelledby="aboutTitle">
+    <h2 id="aboutTitle">这台装置的来历</h2>
+    <ol>
+      <li><span class="when">8 月 19 日</span><span>Tibo 发推说 <q>I was gifted a very fancy new reset button today</q>，收到了一台很花哨的新重置装置。<a href="https://x.com/thsottiaux/status/2089941380336644295" target="_blank" rel="noopener">原推</a></span></li>
+      <li><span class="when">8 月下旬</span><span>YouTuber Matthew Berman 的访谈里，他确认按钮是实体的，觉得该补偿用户时自己就能按。<a href="https://www.36kr.com/p/3954557588405634" target="_blank" rel="noopener">访谈整理</a></span></li>
+      <li><span class="when">9 月 28 日</span><span>DevDay 前一晚的一段视频里，Tibo 演示了它：掌心大小的银白机身，装在深色支架上，底部一个 U 形拉手。他说 <q>you pull it down, and then there's a countdown, ten seconds, and I can cancel it</q>，当场拉了一次又取消了，最后说 <q>we'll pull the lever tomorrow</q>。<a href="https://x.com/i/status/2104752252766585009" target="_blank" rel="noopener">原视频</a></span></li>
+      <li><span class="when">9 月 29 日</span><span>DevDay 现场，他当众用了这台装置，给大家发了一次重置。<a href="https://x.com/hqmank/status/2105118971091406920" target="_blank" rel="noopener">现场帖</a></span></li>
+    </ol>
+    <p class="aside">这页按视频画面复刻。机身正面印的是 OpenAI 的标志；视频里看不出倒计时显示在哪，网页把它放进了拉手上方的黑槽里。</p>
+  </section>
+  <footer>非官方粉丝复刻，仅供娱乐。它不连接 OpenAI，也不会真的重置任何人的额度。</footer>
+</div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const WINDOW_MS = 10000;
+  const mq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+  const reduced = () => mq.matches;
+
+  /* ---------------- local record ---------------- */
+  const KEY = 'reset-lever:v1';
+  const PREF_KEY = 'reset-lever:prefs';
+  let storageOK = true;
+  try { const k = '__reset_lever_probe__'; localStorage.setItem(k, '1'); localStorage.removeItem(k); } catch (e) { storageOK = false; }
+  const read = (key) => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } };
+  const write = (key, val) => {
+    if (!storageOK) return;
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { storageOK = false; renderNote(); }
+  };
+  const blank = () => ({ count: 0, cancels: 0, last: null, log: [] });
+  function load() {
+    const d = read(KEY) || {};
+    const n = (v) => (Number.isFinite(+v) && +v >= 0 ? Math.floor(+v) : 0);
+    return {
+      count: n(d.count),
+      cancels: n(d.cancels),
+      last: typeof d.last === 'string' ? d.last : null,
+      log: Array.isArray(d.log) ? d.log.filter((x) => x && typeof x.t === 'string' && (x.type === 'reset' || x.type === 'cancel')).slice(0, 30) : []
+    };
+  }
+  let data = load();
+  const save = () => write(KEY, data);
+  const pushLog = (type) => { data.log.unshift({ t: new Date().toISOString(), type }); data.log = data.log.slice(0, 30); };
+  const prefs = Object.assign({ sound: true }, read(PREF_KEY) || {});
+
+  /* ---------------- sound ---------------- */
+  let actx = null, master = null, noise = null;
+  function audio() {
+    if (!prefs.sound) return null;
+    if (!actx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try {
+        actx = new AC();
+        master = actx.createGain(); master.gain.value = 0.34; master.connect(actx.destination);
+        const len = Math.floor(actx.sampleRate * 0.3);
+        noise = actx.createBuffer(1, len, actx.sampleRate);
+        const ch = noise.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+      } catch (e) { actx = null; return null; }
+    }
+    if (actx.state === 'suspended') actx.resume().catch(() => {});
+    return actx;
+  }
+  function burst(freq, dur, gain, q) {
+    const c = audio(); if (!c) return;
+    const t = c.currentTime;
+    const s = c.createBufferSource(); s.buffer = noise;
+    const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q;
+    const g = c.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(f); f.connect(g); g.connect(master); s.start(t); s.stop(t + dur + 0.03);
+  }
+  function thump(freq, dur, gain) {
+    const c = audio(); if (!c) return;
+    const t = c.currentTime;
+    const o = c.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(freq * 1.9, t); o.frequency.exponentialRampToValueAtTime(freq, t + 0.05);
+    const g = c.createGain(); g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.03);
+  }
+  function tone(freq, at, dur, gain, type) {
+    const c = audio(); if (!c) return;
+    const t = c.currentTime + at;
+    const o = c.createOscillator(); o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t);
+    const g = c.createGain(); g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.04);
+  }
+  const sfx = {
+    latch() { burst(1100, 0.06, 0.8, 1.4); thump(95, 0.2, 0.85); },
+    unlatch() { burst(1700, 0.05, 0.65, 2); thump(150, 0.11, 0.45); },
+    bump() { burst(1400, 0.03, 0.28, 3); },
+    tick() { burst(3200, 0.02, 0.4, 8); },
+    beep() { tone(1046, 0, 0.09, 0.16, 'square'); },
+    success() { tone(784, 0, 0.18, 0.22); tone(1175, 0.11, 0.32, 0.22); tone(1568, 0.22, 0.46, 0.14); },
+    cancel() { tone(523, 0, 0.13, 0.2, 'triangle'); tone(392, 0.1, 0.24, 0.2, 'triangle'); },
+    press() { burst(2400, 0.03, 0.5, 4); }
+  };
+  const buzz = (p) => { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} };
+
+  /* ---------------- scene framing ---------------- */
+  const svg = $('device');
+  const VB_WIDE = '-40 40 720 570', VB_TALL = '120 54 400 546';
+  function fitView() {
+    const w = svg.getBoundingClientRect().width || svg.parentNode.clientWidth;
+    const vb = w && w < 520 ? VB_TALL : VB_WIDE;
+    if (svg.getAttribute('viewBox') !== vb) svg.setAttribute('viewBox', vb);
+  }
+  fitView();
+  if (window.ResizeObserver) new ResizeObserver(fitView).observe(svg.parentNode);
+  else window.addEventListener('resize', fitView);
+
+  /* ---------------- toasts ---------------- */
+  const ICONS = {
+    pending: '<svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="12" fill="none" stroke="currentColor" stroke-opacity=".22" stroke-width="3"/><circle class="ring" cx="15" cy="15" r="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-dasharray="75.4" stroke-dashoffset="0" transform="rotate(-90 15 15)"/></svg>',
+    success: '<svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14" fill="currentColor"/><path d="M9 15.6l4 4 8.2-9" fill="none" stroke="var(--toast-bg)" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    cancel: '<svg viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="14" fill="currentColor" fill-opacity=".15"/><path d="M11 12.2h6.6a4.4 4.4 0 0 1 0 8.8H13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M13.6 9.2l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+  const CLOSE = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+  const toastsEl = $('toasts');
+  const pad = (n) => String(n).padStart(2, '0');
+  const clock = (d) => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+  function dismiss(el) {
+    if (!el || !el.isConnected || el.classList.contains('leaving')) return;
+    clearTimeout(el._timer);
+    el.classList.add('leaving');
+    const rm = () => el.remove();
+    el.addEventListener('animationend', rm, { once: true });
+    setTimeout(rm, 400);
+  }
+  function newToast() {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    el.innerHTML = '<div class="t-icon"></div><div><p class="t-title"></p><p class="t-sub"></p></div><button class="t-close" type="button" aria-label="关闭提示">' + CLOSE + '</button><div class="t-bar"><i></i></div>';
+    el.querySelector('.t-close').addEventListener('click', () => dismiss(el));
+    toastsEl.prepend(el);
+    const all = toastsEl.querySelectorAll('.toast:not(.leaving)');
+    for (let i = 4; i < all.length; i++) dismiss(all[i]);
+    return el;
+  }
+  function paint(el, kind, title, sub) {
+    el.classList.remove('pending', 'success', 'cancel');
+    el.classList.add(kind);
+    el.querySelector('.t-icon').innerHTML = ICONS[kind];
+    el.querySelector('.t-title').textContent = title;
+    el.querySelector('.t-sub').innerHTML = sub;
+  }
+  function settle(el, ms) {
+    const bar = el.querySelector('.t-bar i');
+    bar.style.transition = 'none';
+    bar.style.transform = 'scaleX(1)';
+    bar.getBoundingClientRect();
+    bar.style.transition = `transform ${ms}ms linear`;
+    bar.style.transform = 'scaleX(0)';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => dismiss(el), ms);
+  }
+  function successToast(el, n) {
+    if (!el || !el.isConnected || el.classList.contains('leaving')) el = newToast();
+    paint(el, 'success', 'ChatGPT 付费用户已重置成功', `本机第 <b>${n}</b> 次 · <b>${clock(new Date())}</b>`);
+    settle(el, 5200);
+  }
+  function pendingToast() {
+    const el = newToast();
+    paint(el, 'pending', '重置程序已启动', '<b class="t-left">10.0</b> 秒后给全体 ChatGPT 付费用户重置额度，推回拉手可取消');
+    const ring = el.querySelector('.ring'), left = el.querySelector('.t-left'), bar = el.querySelector('.t-bar i');
+    let lastTxt = '';
+    return {
+      progress(remain) {
+        if (!el.isConnected) return;
+        const f = clamp(remain / WINDOW_MS, 0, 1);
+        bar.style.transform = `scaleX(${f.toFixed(4)})`;
+        ring.setAttribute('stroke-dashoffset', (75.4 * (1 - f)).toFixed(2));
+        const txt = (Math.ceil(remain / 100) / 10).toFixed(1);
+        if (txt !== lastTxt) { left.textContent = txt; lastTxt = txt; }
+      },
+      success(n) { successToast(el, n); },
+      cancel(elapsed) {
+        if (!el.isConnected || el.classList.contains('leaving')) return;
+        paint(el, 'cancel', '已取消重置', `第 <b>${(elapsed / 1000).toFixed(1)}</b> 秒推回了拉手，这次不计数`);
+        settle(el, 3600);
+      }
+    };
+  }
+
+  /* ---------------- readouts ---------------- */
+  const statusEl = $('status'), statusMsg = $('statusMsg'), statusTimer = $('statusTimer');
+  function setStatus(state, msg) { statusEl.dataset.state = state; statusMsg.textContent = msg; if (state !== 'armed') statusTimer.textContent = ''; }
+  function fmtStamp(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '—';
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${clock(d)}`;
+  }
+  function renderStats(bump) {
+    $('countBig').textContent = data.count.toLocaleString('zh-CN');
+    $('cancelCount').textContent = data.cancels.toLocaleString('zh-CN');
+    $('lastTime').textContent = data.last ? fmtStamp(data.last) : '还没有';
+    const list = $('logList');
+    list.textContent = '';
+    if (!data.log.length) {
+      const li = document.createElement('li'); li.className = 'empty'; li.textContent = '还没有记录，拉一次试试。'; list.appendChild(li);
+    } else {
+      const today = new Date().toDateString();
+      data.log.slice(0, 6).forEach((e) => {
+        const li = document.createElement('li');
+        const t = document.createElement('time'); t.dateTime = e.t;
+        const d = new Date(e.t);
+        t.textContent = d.toDateString() === today ? clock(d) : `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const s = document.createElement('span'); s.className = 'ev ' + e.type; s.textContent = e.type === 'reset' ? '重置成功' : '反悔取消';
+        li.append(t, s); list.appendChild(li);
+      });
+    }
+    if (bump) {
+      const w = $('bigWrap'); w.classList.remove('bump'); void w.offsetWidth; w.classList.add('bump');
+    }
+  }
+  function renderNote() {
+    const n = $('storageNote');
+    if (!storageOK) { n.textContent = '这个浏览器环境不允许本地存储，计数只在本页面打开期间有效。'; n.classList.add('warn'); }
+  }
+
+  /* ---------------- the slot readout and status LED ---------------- */
+  const readout = $('readout'), rdTxt = $('rdTxt'), rdBar = $('rdBar'), led = $('led');
+  let abortTimer = 0;
+  function setBar(f) {
+    const w = 148 * clamp(f, 0, 1);
+    rdBar.setAttribute('x', (320 - w / 2).toFixed(1));
+    rdBar.setAttribute('width', w.toFixed(1));
+  }
+  function setText(t) { if (rdTxt.textContent !== t) rdTxt.textContent = t; }
+  function setMode(mode) {
+    clearTimeout(abortTimer);
+    readout.setAttribute('class', 'm-' + (mode === 'abort' ? 'idle' : mode));
+    led.setAttribute('class', mode === 'idle' ? '' : mode);
+    if (mode === 'idle' || mode === 'armed') { setText('10.0'); setBar(1); }
+    if (mode === 'done') { setText('DONE'); setBar(1); }
+    if (mode === 'abort') {
+      setText('10.0'); setBar(1);
+      abortTimer = setTimeout(() => { if (state === 'idle') setMode('idle'); }, 1300);
+    }
+  }
+
+  /* ---------------- handle physics ---------------- */
+  const handle = $('handle'), hint = $('hint');
+  const TRAVEL = 100;
+  const DOWN_AT = 0.92, UP_AT = 0.08;
+  const K = 260, C = 25;
+  let pos = 0, vel = 0, target = 0, pulled = false;
+  let drag = null, rafId = 0, lastFrame = 0;
+
+  function render() { handle.setAttribute('transform', `translate(0 ${(pos * TRAVEL).toFixed(2)})`); }
+  function checkSwitch() {
+    if (!pulled && pos >= DOWN_AT) { pulled = true; handle.setAttribute('aria-checked', 'true'); onPulled(); return true; }
+    if (pulled && pos <= UP_AT) { pulled = false; handle.setAttribute('aria-checked', 'false'); onPushed(); return true; }
+    return false;
+  }
+  function startLoop() {
+    if (!rafId) { lastFrame = performance.now(); rafId = requestAnimationFrame(loop); }
+  }
+  function loop(now) {
+    rafId = 0;
+    const dt = Math.min(0.034, Math.max(0, (now - lastFrame) / 1000));
+    lastFrame = now;
+    let busy = false;
+    if (!drag) {
+      if (reduced()) { pos = target; vel = 0; }
+      else {
+        const steps = 4, h = dt / steps;
+        for (let i = 0; i < steps; i++) {
+          vel += (-K * (pos - target) - C * vel) * h;
+          pos += vel * h;
+          if (pos > 1) { pos = 1; if (vel > 0) { if (vel > 1.3) sfx.bump(); vel = -vel * 0.22; } }
+          if (pos < 0) { pos = 0; if (vel < 0) { if (vel < -1.3) sfx.bump(); vel = -vel * 0.22; } }
+        }
+      }
+      if (checkSwitch()) target = pulled ? 1 : 0;
+      if (Math.abs(pos - target) > 0.0008 || Math.abs(vel) > 0.01) busy = true;
+      else { pos = target; vel = 0; }
+      render();
+    }
+    if (state === 'armed') { tickCountdown(now); busy = true; }
+    if (busy || drag) rafId = requestAnimationFrame(loop);
+  }
+  function throwHandle(down) {
+    audio();
+    hideHint();
+    target = down ? 1 : 0;
+    vel = down ? 7 : -7;
+    startLoop();
+  }
+  function svgY(e) {
+    const m = svg.getScreenCTM();
+    if (!m) return e.clientY;
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    return p.matrixTransform(m.inverse()).y;
+  }
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.button > 0 || drag) return;
+    e.preventDefault();
+    audio();
+    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+    const y = svgY(e);
+    drag = { id: e.pointerId, y0: y, p0: pos, t0: performance.now(), tLast: performance.now(), v: 0, moved: 0 };
+    vel = 0;
+    handle.classList.add('grabbing');
+    startLoop();
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const y = svgY(e), now = performance.now();
+    const p = clamp(drag.p0 + (y - drag.y0) / TRAVEL, 0, 1);
+    const dt = Math.max(8, now - drag.tLast) / 1000;
+    drag.v = drag.v * 0.6 + ((p - pos) / dt) * 0.4;
+    drag.tLast = now;
+    drag.moved = Math.max(drag.moved, Math.abs(y - drag.y0));
+    if (drag.moved > 3) hideHint();
+    pos = p;
+    checkSwitch();
+    render();
+  });
+  function endDrag(e) {
+    if (!drag || (e && e.pointerId !== drag.id)) return;
+    const tap = drag.moved < 4 && performance.now() - drag.t0 < 350;
+    const v = drag.v;
+    drag = null;
+    handle.classList.remove('grabbing');
+    if (tap) { throwHandle(!pulled); return; }
+    vel = clamp(v, -10, 10);
+    target = pulled ? 1 : 0;
+    startLoop();
+  }
+  handle.addEventListener('pointerup', endDrag);
+  handle.addEventListener('pointercancel', endDrag);
+  handle.addEventListener('lostpointercapture', endDrag);
+  handle.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (k === 'ArrowDown' || k === 'PageDown' || k === 'End') { e.preventDefault(); if (!pulled) throwHandle(true); }
+    else if (k === 'ArrowUp' || k === 'PageUp' || k === 'Home') { e.preventDefault(); if (pulled) throwHandle(false); }
+    else if (k === ' ' || k === 'Enter') { e.preventDefault(); throwHandle(!pulled); }
+  });
+  let hintGone = false;
+  function hideHint() { if (!hintGone) { hintGone = true; hint.classList.add('gone'); } }
+
+  /* ---------------- reset state machine ---------------- */
+  let state = 'idle';
+  let armedAt = 0, commitTimer = 0, lastWhole = 10, pending = null;
+
+  function onPulled() {
+    sfx.latch(); buzz(25);
+    if (state !== 'idle') return;
+    state = 'armed';
+    armedAt = performance.now();
+    lastWhole = 10;
+    clearTimeout(commitTimer);
+    commitTimer = setTimeout(commit, WINDOW_MS + 30);
+    setMode('armed');
+    pending = pendingToast();
+    setStatus('armed', '倒计时中，把拉手推回去就能取消。');
+    hideHint();
+    startLoop();
+  }
+  function onPushed() {
+    sfx.unlatch(); buzz(15);
+    if (state === 'armed') {
+      clearTimeout(commitTimer);
+      state = 'idle';
+      const elapsed = performance.now() - armedAt;
+      data.cancels += 1; pushLog('cancel'); save(); renderStats(false);
+      if (pending) pending.cancel(elapsed);
+      pending = null;
+      sfx.cancel();
+      setMode('abort');
+      setStatus('idle', '已取消，这次不计数。想重置就再拉一次。');
+    } else if (state === 'done') {
+      state = 'idle';
+      setMode('idle');
+      setStatus('idle', '拉手已复位，可以再拉一次。');
+    }
+  }
+  function commit() {
+    if (state !== 'armed') return;
+    state = 'done';
+    clearTimeout(commitTimer);
+    data.count += 1; data.last = new Date().toISOString(); pushLog('reset'); save();
+    renderStats(true);
+    if (pending) pending.success(data.count); else successToast(null, data.count);
+    pending = null;
+    sfx.success(); buzz([30, 50, 30]);
+    setMode('done');
+    setStatus('done', `重置完成，本机第 ${data.count} 次。把拉手推回去复位，就能再拉一次。`);
+  }
+  function tickCountdown(now) {
+    const remain = WINDOW_MS - (now - armedAt);
+    if (remain <= 0) { setText('0.0'); setBar(0); commit(); return; }
+    setText((Math.ceil(remain / 100) / 10).toFixed(1));
+    setBar(remain / WINDOW_MS);
+    const whole = Math.ceil(remain / 1000);
+    if (whole !== lastWhole) {
+      lastWhole = whole;
+      if (whole <= 3) sfx.beep(); else sfx.tick();
+    }
+    if (pending) pending.progress(remain);
+    statusTimer.textContent = `还剩 ${(Math.ceil(remain / 100) / 10).toFixed(1)} 秒`;
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && state === 'armed') startLoop(); });
+
+  /* ---------------- controls ---------------- */
+  const soundBtn = $('soundBtn');
+  function renderSound() {
+    soundBtn.setAttribute('aria-pressed', String(!!prefs.sound));
+    $('soundLabel').textContent = prefs.sound ? '声音开' : '声音关';
+    soundBtn.querySelector('.snd-on').hidden = !prefs.sound;
+    soundBtn.querySelector('.snd-off').hidden = !!prefs.sound;
+  }
+  soundBtn.addEventListener('click', () => {
+    prefs.sound = !prefs.sound;
+    write(PREF_KEY, prefs);
+    renderSound();
+    if (prefs.sound) sfx.press();
+  });
+
+  const clearBtn = $('clearBtn');
+  let clearArmed = false, clearTimer = 0;
+  function disarmClear() { clearArmed = false; clearTimeout(clearTimer); clearBtn.textContent = '清零记录'; clearBtn.classList.remove('confirm'); }
+  clearBtn.addEventListener('click', () => {
+    if (!clearArmed) {
+      clearArmed = true;
+      clearBtn.textContent = '确定清零？再点一次';
+      clearBtn.classList.add('confirm');
+      clearTimer = setTimeout(disarmClear, 3500);
+      return;
+    }
+    disarmClear();
+    data = blank(); save();
+    renderStats(false);
+    if (state !== 'armed') setStatus(state === 'done' ? 'done' : 'idle', '记录已清零。');
+  });
+
+  window.addEventListener('storage', (e) => {
+    if (e.key !== KEY && e.key !== null) return;
+    data = load();
+    renderStats(false);
+  });
+
+  /* ---------------- boot ---------------- */
+  renderSound();
+  renderNote();
+  setMode('idle');
+  renderStats(false);
+  render();
+})();
+</script>
+</body>
+</html>
